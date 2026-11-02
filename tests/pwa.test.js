@@ -34,4 +34,9 @@ describe('App 外殼', () => {
     expect(appFiles).toContain('./index.html');
     expect(appFiles).toContain('./manifest.webmanifest');
   });
+
+  test('安裝與連網時都跳過瀏覽器快取，改版後不會卡在舊畫面', () => {
+    expect(sw).toMatch(/new Request\(url, \{ cache: 'reload' \}\)/);
+    expect(sw).toMatch(/cache: 'no-cache'/);
+  });
 });

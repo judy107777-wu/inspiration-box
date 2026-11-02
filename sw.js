@@ -1,7 +1,7 @@
 // App 外殼：畫面檔離線快取 + 接收從其他 App 分享進來的內容。
 // 改了任何畫面檔，記得把 VERSION 加 1，手機才會換新版。
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const APP_CACHE = `inspiration-app-${VERSION}`;
 const SHARE_CACHE = 'inspiration-share';
 
@@ -25,8 +25,13 @@ const APP_FILES = [
   './src/style.css',
 ];
 
+// GitHub Pages 讓瀏覽器把檔案快取約 10 分鐘，安裝時一律向伺服器拿最新的
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(APP_CACHE).then((cache) => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(APP_CACHE)
+      .then((cache) => cache.addAll(APP_FILES.map((url) => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -68,9 +73,9 @@ self.addEventListener('fetch', (event) => {
   }
   if (event.request.method !== 'GET') return;
 
-  // 有網路拿最新版，沒網路用快取
+  // 有網路拿最新版（先跟伺服器確認有沒有改過），沒網路用快取
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
