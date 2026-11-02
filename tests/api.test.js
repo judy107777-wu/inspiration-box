@@ -44,9 +44,22 @@ describe('連線層', () => {
     expect(calls).toHaveLength(1);
   });
 
-  test('連線失敗時拋出錯誤', async () => {
+  test('連線失敗時說明可能原因（沒網路，或部署存取權不是「所有人」）', async () => {
     const api = createApi({ getSettings: settings, fetchImpl: async () => { throw new TypeError('Failed to fetch'); } });
-    await expect(api.list()).rejects.toThrow();
+    await expect(api.list()).rejects.toThrow(/連不上雲端小程式.*所有人/);
+  });
+
+  test('雲端回的不是資料（例如 Google 登入頁）時，提示檢查網址與存取權', async () => {
+    const fetchImpl = async () => ({ ok: true, json: async () => { throw new SyntaxError('Unexpected token <'); } });
+    const api = createApi({ getSettings: settings, fetchImpl });
+    await expect(api.list()).rejects.toThrow(/\/exec.*所有人/);
+  });
+
+  test('網址不是 Apps Script 的 /exec 結尾時提醒', async () => {
+    const { fetchImpl, calls } = fakeFetch();
+    const api = createApi({ getSettings: () => ({ endpoint: 'https://script.google.com/macros/s/abc/dev', passcode: 'p' }), fetchImpl });
+    await expect(api.list()).rejects.toThrow(/\/exec/);
+    expect(calls).toHaveLength(0);
   });
 
   test('沒設定網址或通行碼時，提示先到設定頁', async () => {

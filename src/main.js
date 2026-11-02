@@ -16,12 +16,18 @@ const queue = createQueue({ send: (record) => api.save(record) });
 
 // 狀態列：排隊中（琥珀）／已存入（綠）
 const status = $('#status');
+const queueNote = $('#queue-note');
 let pending = 0;
 let flashTimer = null;
 function showStatus() {
   if (flashTimer) return;
   status.className = pending ? 'status warn' : 'status';
   status.textContent = pending ? `排隊中 ${pending} 筆` : '';
+}
+// 還在排隊時，把送不出去的原因寫在頂端下方
+function showQueueError(error) {
+  queueNote.hidden = !(pending && error);
+  queueNote.textContent = error ? `還沒存進雲端：${error.message}` : '';
 }
 function flashSaved() {
   clearTimeout(flashTimer);
@@ -50,7 +56,7 @@ const add = createAddScreen($('#add-view'), {
   categories: getCategories(),
 });
 
-queue.onChange((n) => { pending = n; showStatus(); });
+queue.onChange((n, error) => { pending = n; showStatus(); showQueueError(error); });
 queue.onSaved((record) => { flashSaved(); list.upsert(record); });
 
 // 分頁
@@ -73,7 +79,8 @@ function openSettings() {
   $('#passcode-input').value = passcode;
   const cats = getCategories();
   document.querySelectorAll('#category-inputs input').forEach((input, i) => { input.value = cats[i] || ''; });
-  $('#settings-msg').textContent = '';
+  const missing = [!endpoint && '雲端小程式網址', !passcode && '通行碼'].filter(Boolean);
+  $('#settings-msg').textContent = missing.length ? `還沒填：${missing.join('、')}。填好後按「儲存設定」` : '';
   settingsHost.hidden = false;
 }
 $('#settings-btn').addEventListener('click', openSettings);
@@ -85,10 +92,13 @@ $('#settings-form').addEventListener('submit', (e) => {
   add.setCategories(getCategories());
   list.setCategories(getCategories());
   if (!isConfigured()) {
-    $('#settings-msg').textContent = '兩項都要填';
+    $('#settings-msg').textContent = '雲端小程式網址和通行碼兩項都要填';
     return;
   }
   settingsHost.hidden = true;
+  status.className = 'status ok';
+  status.textContent = '設定已儲存';
+  setTimeout(showStatus, 2000);
   queue.flush();
 });
 

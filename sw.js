@@ -1,7 +1,7 @@
 // App 外殼：畫面檔離線快取 + 接收從其他 App 分享進來的內容。
 // 改了任何畫面檔，記得把 VERSION 加 1，手機才會換新版。
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const APP_CACHE = `inspiration-app-${VERSION}`;
 const SHARE_CACHE = 'inspiration-share';
 

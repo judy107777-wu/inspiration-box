@@ -34,13 +34,15 @@ export function createQueue({
   const savedListeners = [];
   let running = null;
   let timer = null;
+  let lastError = null; // 最近一次送不出去的原因，讓畫面說明為什麼還在排隊
 
   const all = async () => run(await dbPromise, 'readonly', (s) => s.getAll());
   const count = async () => run(await dbPromise, 'readonly', (s) => s.count());
 
   async function notifyChange() {
     const n = await count();
-    changeListeners.forEach((fn) => fn(n));
+    if (n === 0) lastError = null;
+    changeListeners.forEach((fn) => fn(n, lastError));
     if (n > 0 && retryMs && !timer && typeof setTimeout === 'function') {
       timer = setTimeout(() => { timer = null; flush(); }, retryMs);
     }
@@ -54,16 +56,19 @@ export function createQueue({
 
   async function sendAll() {
     const items = await all();
+    let failure = null;
     for (const item of items) {
       let saved;
       try {
         saved = await send(item);
-      } catch {
+      } catch (err) {
+        failure = err;
         continue; // 留在排隊中，下次再送
       }
       await run(await dbPromise, 'readwrite', (s) => s.delete(item.id));
       savedListeners.forEach((fn) => fn(saved ?? item));
     }
+    lastError = failure;
     await notifyChange();
   }
 

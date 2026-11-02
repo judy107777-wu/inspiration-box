@@ -100,4 +100,16 @@ describe('送出佇列', () => {
     expect(counts).toContain(1);
     expect(counts[counts.length - 1]).toBe(0);
   });
+
+  test('送不出去時把原因告訴畫面；之後送成功就清掉原因', async () => {
+    const { send } = sender([new Error('通行碼不正確'), 'ok']);
+    const q = createQueue({ send, dbName: name });
+    const seen = [];
+    q.onChange((n, error) => seen.push([n, error?.message ?? null]));
+    await q.add({ id: 'x9' });
+    await q.flush();
+    expect(seen[seen.length - 1]).toEqual([1, '通行碼不正確']);
+    await q.flush();
+    expect(seen[seen.length - 1]).toEqual([0, null]);
+  });
 });
