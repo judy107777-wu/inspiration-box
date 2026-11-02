@@ -4,29 +4,29 @@
 import { categoryButtons } from './photo.js';
 import { extractUrl } from './share.js';
 
+// 左邊是直式截圖框，右邊由上而下：＋照片、連結、分類（兩欄）
 const MARKUP = `
   <section class="add">
-    <div class="photo-box">
-      <div id="paste-zone" class="paste-zone" contenteditable="true" role="textbox"
-           aria-label="長按這裡選「貼上」放入截圖" inputmode="none"></div>
-      <img id="photo-preview" class="photo-preview" alt="要存的照片" hidden>
-      <div class="photo-actions">
-        <button type="button" id="paste-btn" class="ghost">從剪貼簿貼上</button>
-        <label class="ghost file-label">選照片<input type="file" id="photo-file" accept="image/*" hidden></label>
-        <button type="button" id="photo-clear" class="ghost" hidden>移除照片</button>
+    <div class="add-top">
+      <div class="photo-box">
+        <div id="paste-zone" class="paste-zone" contenteditable="true" role="textbox"
+             aria-label="長按這裡選「貼上」放入截圖" inputmode="none"></div>
+        <img id="photo-preview" class="photo-preview" alt="要存的照片" hidden>
+        <button type="button" id="photo-clear" class="photo-clear" aria-label="移除照片" hidden>×</button>
+      </div>
+      <div class="add-side">
+        <label class="ghost file-label">＋照片<input type="file" id="photo-file" accept="image/*" hidden></label>
+        <textarea id="link-input" class="field link-field" rows="3" inputmode="url"
+                  placeholder="連結（可空白）" aria-label="連結" autocomplete="off" spellcheck="false"></textarea>
+        <div id="add-cats" class="cats cats-2" role="group" aria-label="分類"></div>
       </div>
     </div>
-    <label class="field-label" for="link-input">連結</label>
-    <input id="link-input" class="field" type="url" inputmode="url" placeholder="從 IG、FB 分享進來會自動帶入（可空白）">
-    <span class="field-label">分類</span>
-    <div class="cats" role="group" aria-label="分類">${categoryButtons('data-cat')}</div>
-    <label class="field-label" for="keywords-input">關鍵字</label>
-    <input id="keywords-input" class="field" type="text" placeholder="例如：萬聖，擠花奶酥" autocomplete="off">
+    <input id="keywords-input" class="field" type="text" placeholder="關鍵字" aria-label="關鍵字" autocomplete="off">
     <p id="add-hint" class="hint"></p>
     <button type="button" id="save-btn" class="primary save-btn" disabled>儲存</button>
   </section>`;
 
-export function createAddScreen(root, { queue, compress, newId, now, onQueued = () => {} }) {
+export function createAddScreen(root, { queue, compress, newId, now, onQueued = () => {}, categories = [] }) {
   root.innerHTML = MARKUP;
   const $ = (sel) => root.querySelector(sel);
   const zone = $('#paste-zone');
@@ -109,22 +109,7 @@ export function createAddScreen(root, { queue, compress, newId, now, onQueued = 
     try {
       setPhoto(await (await fetch(img.src)).blob());
     } catch {
-      hint.textContent = '讀不到這張圖，請改用「選照片」';
-    }
-  });
-
-  $('#paste-btn').addEventListener('click', async () => {
-    try {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const type = item.types.find((t) => t.startsWith('image/'));
-        if (type) { await setPhoto(await item.getType(type)); return; }
-      }
-      const text = await navigator.clipboard.readText();
-      if (extractUrl(text)) { setLink(text); return; }
-      hint.textContent = '剪貼簿裡沒有圖片或連結';
-    } catch {
-      hint.textContent = '讀不到剪貼簿，請長按上方框框選「貼上」，或點「選照片」';
+      hint.textContent = '讀不到這張圖，請改用「＋照片」';
     }
   });
 
@@ -143,9 +128,14 @@ export function createAddScreen(root, { queue, compress, newId, now, onQueued = 
   linkInput.addEventListener('change', () => setLink(linkInput.value));
   linkInput.addEventListener('input', refresh);
 
-  root.querySelectorAll('[data-cat]').forEach((btn) => {
-    btn.addEventListener('click', () => setCategory(category === btn.dataset.cat ? '' : btn.dataset.cat));
-  });
+  function setCategories(list) {
+    const buttons = categoryButtons('data-cat', list);
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => setCategory(category === btn.dataset.cat ? '' : btn.dataset.cat));
+    });
+    $('#add-cats').replaceChildren(...buttons);
+    setCategory(list.includes(category) ? category : '');
+  }
 
   saveBtn.addEventListener('click', async () => {
     if (saveBtn.disabled) return;
@@ -163,6 +153,6 @@ export function createAddScreen(root, { queue, compress, newId, now, onQueued = 
     onQueued(record);
   });
 
-  refresh();
-  return { setPhoto, setLink, reset };
+  setCategories(categories);
+  return { setPhoto, setLink, reset, setCategories };
 }

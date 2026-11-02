@@ -36,6 +36,16 @@
       <input id="endpoint-input" class="field" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
       <label class="field-label" for="passcode-input">通行碼</label>
       <input id="passcode-input" class="field" type="text" autocomplete="off" spellcheck="false">
+      <label class="field-label">分類（最多 6 個，空白的格子不會出現）</label>
+      <div id="category-inputs" class="category-inputs">
+        <input class="field" type="text" aria-label="分類 1" maxlength="8" autocomplete="off">
+        <input class="field" type="text" aria-label="分類 2" maxlength="8" autocomplete="off">
+        <input class="field" type="text" aria-label="分類 3" maxlength="8" autocomplete="off">
+        <input class="field" type="text" aria-label="分類 4" maxlength="8" autocomplete="off">
+        <input class="field" type="text" aria-label="分類 5" maxlength="8" autocomplete="off">
+        <input class="field" type="text" aria-label="分類 6" maxlength="8" autocomplete="off">
+      </div>
+      <p class="hint">改分類名稱不會改到已經存的資料；舊資料打分類名稱一樣搜得到，點開也能改成新分類。</p>
       <p id="settings-msg" class="hint" role="status"></p>
       <button type="submit" class="primary">儲存設定</button>
       <button type="button" id="settings-close" class="ghost">關閉</button>

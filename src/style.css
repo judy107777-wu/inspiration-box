@@ -5,6 +5,7 @@
   --fg: #1F2A33;
   --muted: #66737F;
   --line: #DDE3E8;
+  --placeholder: #A9B4BE;
   --primary: #4A6378;
   --on-primary: #FFFFFF;
   --secondary: #8FA3B3;
@@ -28,6 +29,7 @@
     --fg: #E4EAEF;
     --muted: #9AA7B2;
     --line: #2C3740;
+    --placeholder: #5F6E7A;
     --primary: #8FB0C9;
     --on-primary: #10171D;
     --secondary: #5D7383;
@@ -48,7 +50,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 [hidden] { display: none !important; }
-button, input { font: inherit; color: inherit; }
+button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
@@ -84,25 +86,47 @@ button { cursor: pointer; }
   background: var(--card);
   padding: 10px 12px;
 }
+.field::placeholder { color: var(--placeholder); }
 .hint { margin: 4px 0 0; font-size: 13px; color: var(--muted); min-height: 1.6em; }
 
-/* 照片區 */
-.photo-box { display: flex; flex-direction: column; gap: 8px; }
-.paste-zone {
-  min-height: 150px;
-  border: 1.5px dashed var(--secondary);
+/* 新增畫面：左邊直式截圖框，右邊＋照片、連結、分類 */
+.add-top { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.add-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.photo-box { position: relative; aspect-ratio: 9 / 18; max-width: 100%; }
+.paste-zone, .photo-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border-radius: var(--radius);
+}
+.paste-zone {
+  border: 1.5px dashed var(--secondary);
   background: var(--card);
   display: grid;
   place-items: center;
-  padding: 16px;
-  color: var(--muted);
+  padding: 12px;
+  color: var(--placeholder);
+  font-size: 14px;
   caret-color: transparent;
   overflow: hidden;
 }
 .paste-zone:empty::before { content: "長按這裡選「貼上」放入截圖"; text-align: center; }
-.photo-preview { width: 100%; max-height: 46vh; object-fit: contain; border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); }
-.photo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.photo-preview { object-fit: contain; background: var(--card); border: 1px solid var(--line); }
+.photo-clear {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(31, 42, 51, .6);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+}
+.link-field { resize: none; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
 
 .ghost {
   border: 1px solid var(--line);
@@ -114,8 +138,11 @@ button { cursor: pointer; }
 }
 .file-label { cursor: pointer; }
 
-/* 分類按鈕：一排，拇指點得到 */
-.cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+/* 分類按鈕：新增畫面兩欄、搜尋與單筆三欄 */
+.cats { display: grid; gap: 6px; }
+.cats-2 { grid-template-columns: repeat(2, 1fr); }
+.cats-3 { grid-template-columns: repeat(3, 1fr); }
+.category-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .cat {
   border: 1px solid var(--secondary);
   background: var(--card);
@@ -151,11 +178,6 @@ button { cursor: pointer; }
 .row:last-child { border-bottom: none; }
 .thumb { width: 64px; height: 64px; flex: none; border-radius: 6px; overflow: hidden; background: var(--line); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb[data-cat="烘焙"] { background: var(--c-bake); }
-.thumb[data-cat="烹飪"] { background: var(--c-cook); }
-.thumb[data-cat="手作"] { background: var(--c-craft); }
-.thumb[data-cat="金句"] { background: var(--c-quote); }
-.thumb[data-cat="好文"] { background: var(--c-read); }
 .row-body { min-width: 0; }
 .row-title { margin: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .row-title b { color: var(--primary); font-weight: 500; margin-right: 2px; }

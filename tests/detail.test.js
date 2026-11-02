@@ -8,8 +8,9 @@ let host, calls, updated, deleted, closed;
 const $ = (sel) => host.querySelector(sel);
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function open(api = {}) {
-  return openDetail(host, rec, {
+function open(api = {}, record = rec) {
+  return openDetail(host, record, {
+    categories: ['烘焙', '烹飪', '手作', '文句', '其它'],
     api: {
       update: async (id, patch) => { calls.push(['update', id, patch]); return { ...rec, ...patch }; },
       remove: async (id) => { calls.push(['delete', id]); },
@@ -34,6 +35,13 @@ describe('單筆檢視', () => {
     const link = $('#detail-link');
     expect(link.getAttribute('href')).toBe(rec.link);
     expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  test('分類按鈕照設定的清單；舊分類不在清單裡時也顯示出來並選取', () => {
+    open({}, { ...rec, category: '金句' });
+    const cats = [...host.querySelectorAll('[data-cat]')].map((b) => b.dataset.cat);
+    expect(cats).toEqual(['烘焙', '烹飪', '手作', '文句', '其它', '金句']);
+    expect($('[data-cat="金句"]').getAttribute('aria-pressed')).toBe('true');
   });
 
   test('修改分類與關鍵字後儲存 → 呼叫 update 並通知清單', async () => {

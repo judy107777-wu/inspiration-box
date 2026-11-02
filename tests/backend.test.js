@@ -99,10 +99,18 @@ describe('雲端小程式', () => {
     expect(deps.store.rows[0].photoId).toBe('');
   });
 
-  test('照片和連結都沒有、或分類不對，拒絕儲存', () => {
+  test('照片和連結都沒有、或沒有分類、分類太長，拒絕儲存', () => {
     expect(call({ action: 'save', record: record({ photo: null, link: '' }) }).ok).toBe(false);
-    expect(call({ action: 'save', record: record({ category: '其他' }) }).ok).toBe(false);
+    expect(call({ action: 'save', record: record({ category: '' }) }).ok).toBe(false);
+    expect(call({ action: 'save', record: record({ category: '   ' }) }).ok).toBe(false);
+    expect(call({ action: 'save', record: record({ category: '一二三四五六七八九十一二三四五六七八九十一' }) }).ok).toBe(false);
     expect(deps.store.rows).toHaveLength(0);
+  });
+
+  test('自訂的分類名稱也能存（分類由手機的設定頁決定）', () => {
+    expect(call({ action: 'save', record: record({ category: '文句' }) }).ok).toBe(true);
+    expect(call({ action: 'save', record: record({ id: 'r2', category: '蠟燭' }) }).ok).toBe(true);
+    expect(deps.store.rows.map((r) => r.category)).toEqual(['文句', '蠟燭']);
   });
 
   test('update 只改分類、關鍵字和修改時間', () => {

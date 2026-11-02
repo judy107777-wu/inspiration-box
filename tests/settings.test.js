@@ -2,7 +2,10 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { getSettings, saveSettings, isConfigured } from '../src/settings.js';
+import {
+  getSettings, saveSettings, isConfigured,
+  getCategories, saveCategories, DEFAULT_CATEGORIES, MAX_CATEGORIES,
+} from '../src/settings.js';
 
 describe('設定', () => {
   beforeEach(() => localStorage.clear());
@@ -20,6 +23,37 @@ describe('設定', () => {
   test('只填一項不算設定完成', () => {
     saveSettings({ endpoint: 'https://x', passcode: '' });
     expect(isConfigured()).toBe(false);
+  });
+});
+
+describe('分類（設定頁可自訂）', () => {
+  beforeEach(() => localStorage.clear());
+
+  test('預設是 烘焙、烹飪、手作、文句、其它', () => {
+    expect(DEFAULT_CATEGORIES).toEqual(['烘焙', '烹飪', '手作', '文句', '其它']);
+    expect(getCategories()).toEqual(DEFAULT_CATEGORIES);
+  });
+
+  test('儲存後去掉空白、空的、重複的', () => {
+    saveCategories([' 烘焙 ', '', '烹飪', '烘焙', '蠟燭']);
+    expect(getCategories()).toEqual(['烘焙', '烹飪', '蠟燭']);
+  });
+
+  test('最多 6 個', () => {
+    expect(MAX_CATEGORIES).toBe(6);
+    saveCategories(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+    expect(getCategories()).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
+  });
+
+  test('全部清空時回到預設，避免沒有分類可選', () => {
+    saveCategories(['', ' ']);
+    expect(getCategories()).toEqual(DEFAULT_CATEGORIES);
+  });
+
+  test('不影響雲端網址與通行碼', () => {
+    saveSettings({ endpoint: 'https://x', passcode: 'p' });
+    saveCategories(['烘焙']);
+    expect(getSettings()).toEqual({ endpoint: 'https://x', passcode: 'p' });
   });
 });
 

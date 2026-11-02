@@ -10,10 +10,8 @@ const MARKUP = `
     </div>
     <img class="detail-photo" alt="收藏的照片" hidden>
     <a id="detail-link" class="primary link-btn" target="_blank" rel="noopener" hidden>打開連結</a>
-    <span class="field-label">分類</span>
-    <div class="cats" role="group" aria-label="分類">${categoryButtons('data-cat')}</div>
-    <label class="field-label" for="detail-keywords">關鍵字</label>
-    <input id="detail-keywords" class="field" type="text" autocomplete="off">
+    <div id="detail-cats" class="cats cats-3" role="group" aria-label="分類"></div>
+    <input id="detail-keywords" class="field" type="text" placeholder="關鍵字" aria-label="關鍵字" autocomplete="off">
     <p id="detail-msg" class="hint" role="status"></p>
     <button type="button" id="detail-save" class="primary">儲存修改</button>
     <button type="button" id="detail-delete" class="danger-ghost">刪除這一筆</button>
@@ -30,7 +28,7 @@ function explain(err) {
   return /fetch|network|load failed/i.test(String(err?.message)) ? '需要網路才能修改，請稍後再試' : err?.message || '沒有成功，請再試一次';
 }
 
-export function openDetail(host, record, { api, onUpdated, onDeleted, onClose }) {
+export function openDetail(host, record, { api, onUpdated, onDeleted, onClose, categories = [] }) {
   host.innerHTML = MARKUP;
   host.hidden = false;
   const $ = (sel) => host.querySelector(sel);
@@ -51,8 +49,12 @@ export function openDetail(host, record, { api, onUpdated, onDeleted, onClose })
   $('#detail-date').textContent = shortDate(record.createdAt);
   $('#detail-keywords').value = record.keywords || '';
 
-  const markCategory = () => host.querySelectorAll('[data-cat]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === category)));
-  host.querySelectorAll('[data-cat]').forEach((btn) => btn.addEventListener('click', () => { category = btn.dataset.cat; markCategory(); }));
+  // 舊分類（例如改名前的「金句」）不在清單裡時也列出來，才看得出原本是哪一類
+  const choices = categories.includes(record.category) || !record.category ? categories : [...categories, record.category];
+  const buttons = categoryButtons('data-cat', choices);
+  $('#detail-cats').replaceChildren(...buttons);
+  const markCategory = () => buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === category)));
+  buttons.forEach((btn) => btn.addEventListener('click', () => { category = btn.dataset.cat; markCategory(); }));
   markCategory();
 
   function close() {

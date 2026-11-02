@@ -2,10 +2,16 @@
 // 這裡不直接碰 Google 服務；試算表與雲端硬碟由 Code.gs 包成 store / files 傳進來，方便測試。
 
 var HEADERS = ['id', 'createdAt', 'updatedAt', 'category', 'keywords', 'link', 'photoId'];
-var CATEGORIES = ['烘焙', '烹飪', '手作', '金句', '好文'];
+// 分類由手機的設定頁決定，這裡只檢查有填、不要太長
+var MAX_CATEGORY_LENGTH = 20;
 
 function fail_(message) {
   return { ok: false, error: message };
+}
+
+function validCategory_(name) {
+  var text = String(name == null ? '' : name).trim();
+  return text.length > 0 && text.length <= MAX_CATEGORY_LENGTH;
 }
 
 function pickRecord_(rec) {
@@ -21,7 +27,7 @@ function saveRecord_(input, deps) {
   // 紅線 3：同一個 id 重送時直接回成功，不重複建立
   var existing = deps.store.find(input.id);
   if (existing) return { ok: true, record: existing.record };
-  if (CATEGORIES.indexOf(input.category) < 0) return fail_('分類不正確');
+  if (!validCategory_(input.category)) return fail_('分類不正確');
   if (!input.photo && !input.link) return fail_('照片和連結至少要有一個');
 
   var photoId = '';
@@ -32,7 +38,7 @@ function saveRecord_(input, deps) {
     id: input.id,
     createdAt: input.createdAt || deps.now(),
     updatedAt: deps.now(),
-    category: input.category,
+    category: String(input.category).trim(),
     keywords: input.keywords || '',
     link: input.link || '',
     photoId: photoId,
@@ -47,8 +53,8 @@ function updateRecord_(id, patch, deps) {
   patch = patch || {};
   var rec = found.record;
   if (patch.category != null) {
-    if (CATEGORIES.indexOf(patch.category) < 0) return fail_('分類不正確');
-    rec.category = patch.category;
+    if (!validCategory_(patch.category)) return fail_('分類不正確');
+    rec.category = String(patch.category).trim();
   }
   if (patch.keywords != null) rec.keywords = String(patch.keywords);
   rec.updatedAt = deps.now();

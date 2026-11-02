@@ -5,7 +5,7 @@ import { createListScreen } from '../src/list.js';
 const data = [
   { id: 'a', createdAt: '2026-11-01T00:00:00Z', category: '烘焙', keywords: '簡易泡芙，酥皮泡芙', link: 'https://www.facebook.com/share/r/1', photoId: 'f1' },
   { id: 'b', createdAt: '2026-10-20T00:00:00Z', category: '烘焙', keywords: '芋泥餡，配方', link: '', photoId: 'f2' },
-  { id: 'c', createdAt: '2026-10-01T00:00:00Z', category: '金句', keywords: '精神海拔決定包容半徑', link: 'https://www.threads.com/x', photoId: '' },
+  { id: 'c', createdAt: '2026-10-01T00:00:00Z', category: '文句', keywords: '精神海拔決定包容半徑', link: 'https://www.threads.com/x', photoId: '' },
 ];
 
 let root, opened;
@@ -13,7 +13,7 @@ const rows = () => [...root.querySelectorAll('.row')];
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 function make(api) {
-  return createListScreen(root, { api, onOpen: (rec) => opened.push(rec), cacheKey: 'test-cache' });
+  return createListScreen(root, { api, onOpen: (rec) => opened.push(rec), cacheKey: 'test-cache', categories: ['烘焙', '烹飪', '手作', '文句', '其它'] });
 }
 
 beforeEach(() => {
@@ -33,6 +33,20 @@ describe('搜尋畫面', () => {
     expect(rows()[0].querySelector('img').getAttribute('src')).toContain('f1');
   });
 
+  test('搜尋框的提示字是「找…」', () => {
+    make({ list: async () => data });
+    expect(root.querySelector('#search-input').getAttribute('placeholder')).toBe('找…');
+  });
+
+  test('舊分類（例如 金句）不在清單裡，打字仍搜得到', async () => {
+    const screen = make({ list: async () => [...data, { id: 'z', createdAt: '2025-01-01T00:00:00Z', category: '金句', keywords: '大步走人生路', link: '', photoId: '' }] });
+    await screen.load();
+    const input = root.querySelector('#search-input');
+    input.value = '金句';
+    input.dispatchEvent(new Event('input'));
+    expect(rows().map((r) => r.dataset.id)).toEqual(['z']);
+  });
+
   test('打「酥」清單即時只剩符合的', async () => {
     const screen = make({ list: async () => data });
     await screen.load();
@@ -45,9 +59,9 @@ describe('搜尋畫面', () => {
   test('點分類只看該類，再點一次取消', async () => {
     const screen = make({ list: async () => data });
     await screen.load();
-    root.querySelector('[data-filter="金句"]').click();
+    root.querySelector('[data-filter="文句"]').click();
     expect(rows().map((r) => r.dataset.id)).toEqual(['c']);
-    root.querySelector('[data-filter="金句"]').click();
+    root.querySelector('[data-filter="文句"]').click();
     expect(rows()).toHaveLength(3);
   });
 
@@ -76,7 +90,7 @@ describe('搜尋畫面', () => {
     await screen.load();
     const row = root.querySelector('[data-id="c"]');
     expect(row.querySelector('img')).toBeNull();
-    expect(row.querySelector('.thumb').dataset.cat).toBe('金句');
+    expect(row.querySelector('.thumb').dataset.cat).toBe('文句');
   });
 
   test('點一列會打開那一筆', async () => {

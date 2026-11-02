@@ -2,17 +2,17 @@
 // 先顯示上次的快取，再向雲端拿最新的。
 
 import { search } from './search.js';
-import { categoryButtons, photoSrc, hostOf, shortDate } from './photo.js';
+import { categoryButtons, categoryColor, photoSrc, hostOf, shortDate } from './photo.js';
 
 const MARKUP = `
   <section class="list">
-    <input id="search-input" class="field search-field" type="search" placeholder="打一兩個字，例如：酥、雞、蠟燭" autocomplete="off">
-    <div class="cats" role="group" aria-label="篩選分類">${categoryButtons('data-filter')}</div>
+    <input id="search-input" class="field search-field" type="search" placeholder="找…" aria-label="搜尋" autocomplete="off">
+    <div id="list-cats" class="cats cats-3" role="group" aria-label="篩選分類"></div>
     <p id="list-note" class="hint"></p>
     <ul id="list-rows" class="rows"></ul>
   </section>`;
 
-export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.cache' }) {
+export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.cache', categories = [] }) {
   root.innerHTML = MARKUP;
   const input = root.querySelector('#search-input');
   const ul = root.querySelector('#list-rows');
@@ -20,6 +20,7 @@ export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.ca
 
   let items = readCache();
   let filter = '';
+  let cats = categories;
 
   function readCache() {
     try { return JSON.parse(localStorage.getItem(cacheKey) || '[]'); } catch { return []; }
@@ -37,6 +38,7 @@ export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.ca
     const thumb = document.createElement('div');
     thumb.className = 'thumb';
     thumb.dataset.cat = rec.category;
+    thumb.style.background = categoryColor(rec.category, cats);
     if (rec.photoId) {
       const img = document.createElement('img');
       img.src = photoSrc(rec.photoId, 200);
@@ -72,13 +74,26 @@ export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.ca
   }
 
   input.addEventListener('input', render);
-  root.querySelectorAll('[data-filter]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      filter = filter === btn.dataset.filter ? '' : btn.dataset.filter;
-      root.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
-      render();
+
+  function markFilter() {
+    root.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
+  }
+
+  function setCategories(list) {
+    cats = list;
+    if (!cats.includes(filter)) filter = '';
+    const buttons = categoryButtons('data-filter', cats);
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        filter = filter === btn.dataset.filter ? '' : btn.dataset.filter;
+        markFilter();
+        render();
+      });
     });
-  });
+    root.querySelector('#list-cats').replaceChildren(...buttons);
+    markFilter();
+    render();
+  }
 
   async function load() {
     render();
@@ -107,6 +122,6 @@ export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.ca
     render();
   }
 
-  render();
-  return { load, upsert, removeItem, render };
+  setCategories(cats);
+  return { load, upsert, removeItem, render, setCategories };
 }

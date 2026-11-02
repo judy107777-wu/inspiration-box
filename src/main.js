@@ -6,7 +6,7 @@ import { compressImage } from './image.js';
 import { createAddScreen } from './add.js';
 import { createListScreen } from './list.js';
 import { openDetail } from './detail.js';
-import { getSettings, saveSettings, isConfigured } from './settings.js';
+import { getSettings, saveSettings, isConfigured, getCategories, saveCategories } from './settings.js';
 import { takeSharedInbox } from './share.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -32,8 +32,10 @@ function flashSaved() {
 
 const list = createListScreen($('#list-view'), {
   api,
+  categories: getCategories(),
   onOpen: (record) => openDetail($('#detail-host'), record, {
     api,
+    categories: getCategories(),
     onUpdated: (rec) => list.upsert(rec),
     onDeleted: (id) => list.removeItem(id),
   }),
@@ -45,6 +47,7 @@ const add = createAddScreen($('#add-view'), {
   newId: () => crypto.randomUUID(),
   now: () => new Date().toISOString(),
   onQueued: () => queue.flush(),
+  categories: getCategories(),
 });
 
 queue.onChange((n) => { pending = n; showStatus(); });
@@ -68,6 +71,8 @@ function openSettings() {
   const { endpoint, passcode } = getSettings();
   $('#endpoint-input').value = endpoint;
   $('#passcode-input').value = passcode;
+  const cats = getCategories();
+  document.querySelectorAll('#category-inputs input').forEach((input, i) => { input.value = cats[i] || ''; });
   $('#settings-msg').textContent = '';
   settingsHost.hidden = false;
 }
@@ -76,6 +81,9 @@ $('#settings-close').addEventListener('click', () => { settingsHost.hidden = tru
 $('#settings-form').addEventListener('submit', (e) => {
   e.preventDefault();
   saveSettings({ endpoint: $('#endpoint-input').value, passcode: $('#passcode-input').value });
+  saveCategories([...document.querySelectorAll('#category-inputs input')].map((input) => input.value));
+  add.setCategories(getCategories());
+  list.setCategories(getCategories());
   if (!isConfigured()) {
     $('#settings-msg').textContent = '兩項都要填';
     return;

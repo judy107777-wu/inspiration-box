@@ -27,13 +27,29 @@ beforeEach(() => {
     newId: () => 'id-1',
     now: () => '2026-11-03T10:00:00.000Z',
     onQueued: () => { saved++; },
+    categories: ['烘焙', '烹飪', '手作', '文句', '其它'],
   });
 });
 
 describe('新增畫面', () => {
-  test('有五個分類按鈕', () => {
+  test('分類按鈕照設定的清單排出來', () => {
     const cats = [...root.querySelectorAll('[data-cat]')].map((b) => b.dataset.cat);
-    expect(cats).toEqual(['烘焙', '烹飪', '手作', '金句', '好文']);
+    expect(cats).toEqual(['烘焙', '烹飪', '手作', '文句', '其它']);
+  });
+
+  test('設定改了分類 → 按鈕跟著換，原本選的若被刪掉就取消選取', () => {
+    $('[data-cat="其它"]').click();
+    screen.setCategories(['烘焙', '蠟燭']);
+    expect([...root.querySelectorAll('[data-cat]')].map((b) => b.dataset.cat)).toEqual(['烘焙', '蠟燭']);
+    expect(root.querySelector('[data-cat][aria-pressed="true"]')).toBeNull();
+  });
+
+  test('沒有欄位標題，只用淺灰提示字；也沒有「從剪貼簿貼上」按鈕', () => {
+    expect(root.querySelector('.field-label')).toBeNull();
+    expect($('#link-input').getAttribute('placeholder')).toBe('連結（可空白）');
+    expect($('#keywords-input').getAttribute('placeholder')).toBe('關鍵字');
+    expect($('#paste-btn')).toBeNull();
+    expect($('#photo-file')).not.toBeNull();
   });
 
   test('貼上一張圖片後出現預覽', async () => {
