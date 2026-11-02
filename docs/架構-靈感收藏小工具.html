@@ -1,0 +1,283 @@
+<title>靈感收藏小工具架構</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* 版面：單欄閱讀，像一份俐落的規格書；灰藍為主色，照片色彩留給內容 */
+:root{
+  --bg:#F4F6F8; --card:#FFFFFF; --fg:#1F2A33; --muted:#66737F; --line:#DDE3E8;
+  --primary:#4A6378; --primary-soft:#E6ECF1; --secondary:#8FA3B3;
+  --ok:#2F7A5B; --ok-soft:#E3F1EA; --warn:#B7791F; --warn-soft:#F7EEDD;
+  --c-bake:#A9744F; --c-cook:#6F8A4E; --c-craft:#5F74A8; --c-quote:#9A6A88; --c-read:#4F8C8C;
+  --font-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141A1F; --card:#1C242B; --fg:#E4EAEF; --muted:#9AA7B2; --line:#2C3740;
+  --primary:#8FB0C9; --primary-soft:#24323D; --secondary:#6B8293;
+  --ok:#6CC39C; --ok-soft:#1E3329; --warn:#E0A955; --warn-soft:#3A2E1B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141A1F; --card:#1C242B; --fg:#E4EAEF; --muted:#9AA7B2; --line:#2C3740;
+  --primary:#8FB0C9; --primary-soft:#24323D; --secondary:#6B8293;
+  --ok:#6CC39C; --ok-soft:#1E3329; --warn:#E0A955; --warn-soft:#3A2E1B; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.75}
+.wrap{max-width:860px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:44px}
+header{display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--muted)}
+h1{font-size:28px;line-height:1.35;margin:0;font-weight:700;text-wrap:balance}
+h2{font-size:19px;margin:0 0 14px;font-weight:700;color:var(--primary);text-wrap:balance}
+h3{font-size:15px;margin:0;font-weight:700}
+p{margin:0}
+.lead{color:var(--muted);max-width:62ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.pill{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--primary-soft);color:var(--primary)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--muted);font-size:12px;letter-spacing:.06em;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+td:first-child{font-weight:500;white-space:nowrap}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.mermaid-box{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;overflow-x:auto}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.sw{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12px}
+.sw .chip{height:56px}
+.sw div:last-child{padding:8px 10px;display:flex;flex-direction:column}
+.sw code{font-family:var(--font-mono);color:var(--muted)}
+.dots{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:13px}
+.dots span{display:inline-flex;align-items:center;gap:6px}
+.dots i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.phone{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:16px}
+.mock{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.mock .lbl{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.paste{border:1.5px dashed var(--secondary);border-radius:8px;height:92px;display:grid;place-items:center;color:var(--muted)}
+.field{border:1px solid var(--line);border-radius:6px;padding:7px 10px;color:var(--muted)}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cat{border:1px solid var(--secondary);border-radius:6px;padding:3px 9px;color:var(--fg)}
+.cat.on{background:var(--primary);border-color:var(--primary);color:var(--card)}
+.save{background:var(--primary);color:var(--card);border-radius:8px;text-align:center;padding:9px;font-weight:500}
+.status{display:flex;justify-content:space-between;font-size:12px}
+.row{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:8px}
+.row:last-child{border-bottom:none}
+.thumb{width:44px;height:44px;border-radius:6px;flex:none}
+.row b{font-weight:500}
+.row small{color:var(--muted);display:block}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.rules{counter-reset:r;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.rules li{counter-increment:r;display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.rules li::before{content:counter(r);font-family:var(--font-mono);color:var(--primary);font-weight:500;min-width:1.2em}
+.batches{display:flex;flex-direction:column;gap:18px}
+.batch h3{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:8px;letter-spacing:.04em}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.task{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.task .id{font-family:var(--font-mono);font-size:12px;color:var(--primary)}
+.task p{font-size:13px;color:var(--muted)}
+.task .t{font-size:12px;color:var(--fg);background:var(--bg);border-radius:6px;padding:6px 8px}
+.task .dep{font-size:12px;color:var(--muted)}
+.gloss td:first-child{color:var(--primary)}
+@media (max-width:480px){h1{font-size:23px}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">架構規劃 · 2026-11-03</span>
+  <h1>靈感收藏小工具</h1>
+  <p class="lead">在安卓手機上幾秒鐘存下截圖、連結、分類和關鍵字，照片放 Google 雲端硬碟；備課時打一兩個字就能找回來。這頁是開工前的規劃，還沒有寫任何程式。</p>
+  <div class="meta"><span class="pill">只有自己用</span><span class="pill">安卓主畫面</span><span class="pill ok">每月 0 元・不綁卡</span><span class="pill warn">狀態：待確認</span></div>
+</header>
+
+<section>
+  <h2>一筆資料怎麼從手機走到雲端</h2>
+  <div class="mermaid-box">
+<pre class="mermaid">
+flowchart TD
+  A["在 IG／FB 看到好內容"] --> B["截圖（自動進剪貼簿）"]
+  B --> C["按「分享」→ 選靈感收藏<br/>或直接打開工具"]
+  C --> D["新增畫面<br/>貼上截圖・連結自動帶入<br/>點分類・打關鍵字"]
+  D --> E["按儲存<br/>照片先壓縮成約 200KB"]
+  E --> F["先存在手機暫存區<br/>標示「排隊中」"]
+  F -->|有網路| G["雲端小程式<br/>（你 Google 帳號下的 Apps Script）"]
+  F -->|沒網路| F
+  G --> H["照片 → Google 雲端硬碟"]
+  G --> I["文字 → Google 試算表一列"]
+  H --> J["顯示「已存入 😊」<br/>才從暫存區移除"]
+  I --> J
+  K["備課時打開搜尋分頁"] --> L["抓全部文字資料到手機"]
+  L --> M["選分類＋打一兩個字<br/>瞬間比對出結果"]
+</pre>
+  </div>
+  <p class="note">「排隊中」的資料無論發生什麼錯誤都不會被刪掉，只會等下一次有網路再送。</p>
+</section>
+
+<section>
+  <h2>你做的選擇</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>你選了什麼</th><th>為什麼這樣選</th><th>對你的好處</th><th>代價</th></tr></thead>
+    <tbody>
+      <tr><td>只有自己用</td><td>收藏是給自己備課用</td><td>不用登入帳號，打開就能存</td><td>之後想跟夥伴共用，要另外改</td></tr>
+      <tr><td>裝在主畫面，能從 IG／FB 分享進來</td><td>以前切換 LINE、找對話最麻煩</td><td>存一筆不用再複製連結、切換 App</td><td>剪貼簿貼圖和分享選單只能在你手機上實測確認</td></tr>
+      <tr><td>一筆只放一張照片</td><td>多張就分成多筆</td><td>清單裡每張小圖都對應一則，一眼認得</td><td>同一個主題有好幾張，要存好幾次</td></tr>
+      <tr><td>不用 AI，關鍵字自己打</td><td>口說錯字多、改起來麻煩</td><td>不花 AI 費用，搜尋結果完全照你打的字</td><td>關鍵字要自己想；照片裡的字搜不到</td></tr>
+      <tr><td>五個分類按鈕：烘焙、烹飪、手作、金句、好文</td><td>你過去每則都先打分類</td><td>點一下就好，不會打錯字</td><td>不能臨時新增第六個分類（要改程式）</td></tr>
+      <tr><td>資料存 Google 雲端硬碟＋試算表</td><td>你原本就想放雲端硬碟；另一個選項 Firebase 較快，但存照片要綁信用卡</td><td>0 元、不綁卡，資料都在自己帳號，試算表也能當備份</td><td>每次儲存要等 1～3 秒</td></tr>
+      <tr><td>網頁放 GitHub Pages</td><td>你上一個工具就是這樣放的</td><td>不用再學新的上線方式</td><td>原始碼會公開（但通行碼和資料不在裡面）</td></tr>
+      <tr><td>照片設「知道連結的人可檢視」</td><td>工具才能直接顯示小圖</td><td>清單打開就有圖，不用一張張等</td><td>拿到那串亂碼網址的人看得到照片</td></tr>
+      <tr><td>通行碼只輸入一次</td><td>每次輸入太麻煩</td><td>打開就用，外人仍然送不進資料</td><td>清除瀏覽器資料或換手機要重新輸入</td></tr>
+      <tr><td>沒網路先存手機，有網路自動補傳，傳完才說「已存入」</td><td>照片絕對不能不見，行動網路也要能傳</td><td>不會誤以為存好就離開，資料不會掉</td><td>訊號差時，「已存入」會晚一點才出現</td></tr>
+      <tr><td>點開一筆可以改分類和關鍵字，也能刪除</td><td>打錯要能改；素材大約半年就用不到</td><td>不用刪掉重存；搜尋結果保持在有用的內容</td><td>多一個單筆畫面</td></tr>
+      <tr><td>舊資料不匯入</td><td>舊素材大多用過了；金句、好文自己重存順便複習</td><td>省下整理和匯入的時間</td><td>手機舊截圖要你自己挑完才能刪</td></tr>
+      <tr><td>用一週都沒掉資料就算完成</td><td>先定標準，避免一直加功能</td><td>知道什麼時候可以放心離開 LINE</td><td>要實際用滿一週才能下結論</td></tr>
+      <tr><td>灰藍色＋俐落極簡</td><td>截圖本身顏色很多</td><td>照片是畫面主角，好認</td><td>畫面比較素，沒有裝飾</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>模組怎麼分工</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>模組</th><th>負責</th><th>不負責</th></tr></thead>
+    <tbody>
+      <tr><td>新增畫面</td><td>貼上照片、連結、分類按鈕、關鍵字、儲存</td><td>直接跟雲端溝通</td></tr>
+      <tr><td>分享接收</td><td>把 IG、FB 分享過來的一段文字只取出網址；接收相簿分享的照片</td><td>儲存資料</td></tr>
+      <tr><td>照片處理</td><td>縮到長邊 1280px、轉成 JPEG</td><td>裁切、濾鏡、讀照片裡的字</td></tr>
+      <tr><td>送出佇列</td><td>先存手機、有網路就送、失敗就重試、成功才移除</td><td>決定畫面長相；刪除沒送成功的資料</td></tr>
+      <tr><td>連線層</td><td>帶著通行碼呼叫雲端的新增、列出、修改、刪除</td><td>重試（交給送出佇列）</td></tr>
+      <tr><td>雲端小程式</td><td>檢查通行碼、寫雲端硬碟和試算表、同一筆重送不重複</td><td>搜尋、畫面</td></tr>
+      <tr><td>搜尋</td><td>分類篩選、單字與部分比對、多個詞取交集、新的在前</td><td>連網、猜字、排名</td></tr>
+      <tr><td>清單與單筆檢視</td><td>一列一筆、看大圖、開連結、修改、刪除</td><td>新增資料</td></tr>
+      <tr><td>設定</td><td>存雲端網址和通行碼（只在這支手機）</td><td>把它們放進公開的原始碼</td></tr>
+      <tr><td>App 外殼</td><td>裝到主畫面、登記分享選單、沒網路也能打開畫面</td><td>快取雲端資料</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>技術選型</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>項目</th><th>選用</th><th>白話說明</th><th>費用</th></tr></thead>
+    <tbody>
+      <tr><td>程式寫法</td><td>單純 HTML＋JavaScript</td><td>不加框架，畫面只有兩三頁，每一行都看得懂</td><td>0</td></tr>
+      <tr><td>資料與照片</td><td>Google 試算表＋雲端硬碟</td><td>一筆一列；照片用你月費方案的空間</td><td>0，不綁卡</td></tr>
+      <tr><td>後端</td><td>Apps Script 網頁應用程式</td><td>掛在你 Google 帳號下的小程式，負責寫入</td><td>0</td></tr>
+      <tr><td>網頁放哪</td><td>GitHub Pages</td><td>你已經會用</td><td>0</td></tr>
+      <tr><td>AI</td><td>不使用</td><td>搜尋只需要比對文字</td><td>0</td></tr>
+      <tr><td>手機暫存</td><td>瀏覽器內建的資料庫（IndexedDB）</td><td>沒網路時先把資料放這裡</td><td>0</td></tr>
+      <tr><td>測試</td><td>Vitest</td><td>指令 <code>npx vitest run</code>；剪貼簿和分享另做手機實測</td><td>0</td></tr>
+      <tr><td>比較過：Firebase</td><td>未採用</td><td>比較快、比較穩，但存照片要綁卡升級方案</td><td>用量內約 0，但要綁卡</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">維護：平常不用管，改程式才需要重新推上 GitHub。換人接手：都是常見服務，會寫網頁的人都看得懂。</p>
+</section>
+
+<section>
+  <h2>設計方向：灰藍・俐落極簡</h2>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#4A6378"></div><div><b>主色 灰藍</b><code>#4A6378</code>儲存、選中的分類</div></div>
+    <div class="sw"><div class="chip" style="background:#8FA3B3"></div><div><b>輔色 霧灰藍</b><code>#8FA3B3</code>未選中的外框</div></div>
+    <div class="sw"><div class="chip" style="background:#2F7A5B"></div><div><b>強調 沉綠</b><code>#2F7A5B</code>「已存入 😊」</div></div>
+    <div class="sw"><div class="chip" style="background:#B7791F"></div><div><b>提醒 琥珀</b><code>#B7791F</code>「排隊中」</div></div>
+    <div class="sw"><div class="chip" style="background:#F4F6F8"></div><div><b>背景 霧白</b><code>#F4F6F8</code>整頁底色</div></div>
+    <div class="sw"><div class="chip" style="background:#1F2A33"></div><div><b>文字 深墨</b><code>#1F2A33</code>主要文字</div></div>
+  </div>
+  <div class="dots">
+    <span><i style="background:var(--c-bake)"></i>烘焙</span>
+    <span><i style="background:var(--c-cook)"></i>烹飪</span>
+    <span><i style="background:var(--c-craft)"></i>手作</span>
+    <span><i style="background:var(--c-quote)"></i>金句</span>
+    <span><i style="background:var(--c-read)"></i>好文</span>
+    <span style="color:var(--muted)">（清單裡的分類小色點）</span>
+  </div>
+
+  <div class="phone">
+    <div class="mock">
+      <span class="lbl">新增畫面（打開就是這頁）</span>
+      <div class="paste">點一下貼上截圖</div>
+      <div class="field">https://www.instagram.com/reel/…</div>
+      <div class="cats"><span class="cat on">烘焙</span><span class="cat">烹飪</span><span class="cat">手作</span><span class="cat">金句</span><span class="cat">好文</span></div>
+      <div class="field">萬聖，擠花奶酥</div>
+      <div class="status"><span style="color:var(--warn)">排隊中 1 筆</span><span style="color:var(--ok)">已存入 😊</span></div>
+      <div class="save">儲存</div>
+    </div>
+    <div class="mock">
+      <span class="lbl">搜尋畫面（範例資料）</span>
+      <div class="field">酥皮</div>
+      <div class="cats"><span class="cat on">烘焙</span><span class="cat">烹飪</span><span class="cat">手作</span><span class="cat">金句</span><span class="cat">好文</span></div>
+      <div class="row"><span class="thumb" style="background:var(--c-bake);opacity:.55"></span><div><b>烘焙</b>・簡易泡芙，酥皮泡芙<small>facebook.com・11/01</small></div></div>
+      <div class="row"><span class="thumb" style="background:var(--c-bake);opacity:.35"></span><div><b>烘焙</b>・芋泥餡，酥皮，配方<small>instagram.com・10/20</small></div></div>
+    </div>
+  </div>
+  <ul class="plain" style="margin-top:16px">
+    <li><b>字體</b>：標題和內文都用手機內建的黑體，標題稍粗，不用裝飾字。</li>
+    <li><b>版面</b>：儲存按鈕固定在下方拇指位置；分類一排點選；底部只有「新增」「搜尋」兩個分頁。</li>
+    <li><b>為什麼</b>：截圖本身很花，底色退後，照片才認得出來；綠色「已存入」、琥珀色「排隊中」，一眼知道有沒有存好。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>最高原則重點</h2>
+  <div class="tbl gloss"><table>
+    <thead><tr><th>名詞</th><th>指的是</th><th>不是指</th></tr></thead>
+    <tbody>
+      <tr><td>一筆資料</td><td>最多一張照片＋可有可無的連結＋一個分類＋關鍵字</td><td>一則 LINE 訊息；多張照片</td></tr>
+      <tr><td>分類</td><td>五個固定按鈕之一</td><td>關鍵字</td></tr>
+      <tr><td>已存入</td><td>雲端確認寫好之後才出現</td><td>「按下儲存」</td></tr>
+      <tr><td>排隊中</td><td>還在手機、等著送上雲端</td><td>失敗或可丟棄</td></tr>
+      <tr><td>通行碼</td><td>證明是你本人送的一組密語</td><td>Google 帳號密碼</td></tr>
+    </tbody>
+  </table></div>
+  <h3 style="margin:20px 0 10px">紅線規則</h3>
+  <ol class="rules">
+    <li>雲端確認寫入前，手機裡那一份絕對不刪。</li>
+    <li>「已存入」只在雲端確認後顯示。</li>
+    <li>同一筆重送不會變成兩筆。</li>
+    <li>行動網路也要上傳，不限 WiFi。</li>
+    <li>通行碼和雲端網址不放進公開的原始碼。</li>
+    <li>不加需求文件沒有的欄位或功能；要加先改需求。</li>
+    <li>刪除照片只丟進雲端硬碟垃圾桶。</li>
+  </ol>
+  <p class="note">上線標準：連續用一週，每天存的都「已存入」，試算表、雲端硬碟和工具清單的筆數一致。</p>
+</section>
+
+<section>
+  <h2>任務與執行順序</h2>
+  <p class="note" style="margin:0 0 14px">每個任務都先寫測試再寫程式，測試全過才算完成。同一批的任務動到不同檔案，可以同時做；個人練習建議照順序一個一個來。</p>
+  <div class="batches">
+    <div class="batch"><h3>第一批</h3><div class="cards">
+      <div class="task"><span class="id">T01</span><h3>專案骨架與測試環境</h3><span class="t">先驗：<code>npx vitest run</code> 跑出一條通過的範例測試</span></div>
+    </div></div>
+    <div class="batch"><h3>第二批（可同時開）</h3><div class="cards">
+      <div class="task"><span class="id">T02</span><h3>搜尋比對</h3><span class="t">先驗：查「蠟」找到「紅色的蠟燭」；「烘焙 酥皮」只回兩個詞都有的；「OREO」找得到「oreo」</span></div>
+      <div class="task"><span class="id">T03</span><h3>照片處理</h3><span class="t">先驗：4000×3000 → 1280×960；小圖不放大；輸出是 JPEG</span></div>
+      <div class="task"><span class="id">T04</span><h3>送出佇列</h3><span class="t">先驗：送出失敗資料還在；恢復網路自動重試；成功才移除</span></div>
+      <div class="task"><span class="id">T05</span><h3>雲端小程式</h3><span class="t">先驗：通行碼錯就不寫；同一個 id 送兩次只有一列；刪除時照片進垃圾桶</span></div>
+      <div class="task"><span class="id">T11</span><h3>設定頁</h3><span class="t">先驗：重開後設定還在；原始碼裡找不到通行碼</span></div>
+    </div></div>
+    <div class="batch"><h3>第三批</h3><div class="cards">
+      <div class="task"><span class="id">T06</span><h3>連線層</h3><span class="t">先驗：四種動作都帶通行碼；雲端回錯誤就交給佇列</span><span class="dep">等 T05</span></div>
+      <div class="task"><span class="id">T12</span><h3>App 外殼</h3><span class="t">先驗：manifest 有分享選單欄位；飛航模式也打得開新增畫面</span></div>
+    </div></div>
+    <div class="batch"><h3>第四批</h3><div class="cards">
+      <div class="task"><span class="id">T07</span><h3>新增畫面</h3><span class="t">先驗：貼上圖出現預覽；沒照片也沒連結不能存；存完先「排隊中」再「已存入」</span><span class="dep">等 T03、T04、T06</span></div>
+      <div class="task"><span class="id">T09</span><h3>搜尋畫面與清單</h3><span class="t">先驗：打「酥」清單即時縮小；沒照片的用分類色塊代替</span><span class="dep">等 T02、T06</span></div>
+    </div></div>
+    <div class="batch"><h3>第五批</h3><div class="cards">
+      <div class="task"><span class="id">T08</span><h3>分享接收</h3><span class="t">先驗：「看看這個 https://…」只取出網址；相簿分享的照片出現在預覽</span><span class="dep">等 T07、T12</span></div>
+      <div class="task"><span class="id">T10</span><h3>單筆檢視、修改、刪除</h3><span class="t">先驗：改關鍵字清單同步；刪除前先確認，取消就不動</span><span class="dep">等 T09</span></div>
+    </div></div>
+    <div class="batch"><h3>第六批</h3><div class="cards">
+      <div class="task"><span class="id">T13</span><h3>上線與一週驗收</h3><span class="t">先驗：飛航模式存一筆 → 排隊中 → 關掉飛航 → 自動已存入</span><span class="dep">等全部</span></div>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>尚未確認</h2>
+  <ul class="plain">
+    <li><b>分類要不要必選</b>：先訂為「必選一個」，因為你每則都會先打分類，搜尋也靠它篩選。可以改。</li>
+    <li><b>剪貼簿直接貼截圖</b>：要在 T07 用你的手機實測；不行就改成「點一下跳出最新的照片」。</li>
+    <li><b>重複連結要不要提醒</b>：目前不做，維持簡單。</li>
+  </ul>
+</section>
+</div>

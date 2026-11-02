@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4A6378">
+  <title>靈感收藏</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>靈感收藏</h1>
+    <span id="status" class="status" role="status" aria-live="polite"></span>
+    <button type="button" id="settings-btn" class="icon-btn" aria-label="設定">設定</button>
+  </header>
+
+  <main class="content">
+    <div id="add-view"></div>
+    <div id="list-view" hidden></div>
+  </main>
+
+  <nav class="tabs" aria-label="切換畫面">
+    <button type="button" data-tab="add" aria-current="page">新增</button>
+    <button type="button" data-tab="list">搜尋</button>
+  </nav>
+
+  <div id="detail-host" class="overlay" hidden></div>
+
+  <div id="settings-host" class="overlay" hidden>
+    <form id="settings-form" class="settings">
+      <h2>設定</h2>
+      <p class="hint">這兩項只存在這支手機，不會出現在公開的原始碼裡。照著「部署說明」做完雲端小程式後，把網址和通行碼貼進來。</p>
+      <label class="field-label" for="endpoint-input">雲端小程式網址</label>
+      <input id="endpoint-input" class="field" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+      <label class="field-label" for="passcode-input">通行碼</label>
+      <input id="passcode-input" class="field" type="text" autocomplete="off" spellcheck="false">
+      <p id="settings-msg" class="hint" role="status"></p>
+      <button type="submit" class="primary">儲存設定</button>
+      <button type="button" id="settings-close" class="ghost">關閉</button>
+    </form>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
