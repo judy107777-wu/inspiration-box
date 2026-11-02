@@ -9,7 +9,7 @@ const MARKUP = `
     <input id="search-input" class="field search-field" type="search" placeholder="找…" aria-label="搜尋" autocomplete="off">
     <div id="list-cats" class="cats cats-3" role="group" aria-label="篩選分類"></div>
     <p id="list-note" class="hint"></p>
-    <ul id="list-rows" class="rows"></ul>
+    <ul id="list-rows" class="rows wall"></ul>
   </section>`;
 
 export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.cache', categories = [] }) {
@@ -29,11 +29,13 @@ export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.ca
     try { localStorage.setItem(cacheKey, JSON.stringify(items)); } catch { /* 空間不足就算了 */ }
   }
 
+  // 照片牆的一格：直式縮圖（跟截圖同比例），下方兩行關鍵字
   function rowFor(rec) {
     const li = document.createElement('li');
-    li.className = 'row';
+    li.className = 'row card';
     li.dataset.id = rec.id;
     li.tabIndex = 0;
+    li.title = [rec.category, hostOf(rec.link), shortDate(rec.createdAt)].filter(Boolean).join('・');
 
     const thumb = document.createElement('div');
     thumb.className = 'thumb';
@@ -41,25 +43,19 @@ export function createListScreen(root, { api, onOpen, cacheKey = 'inspiration.ca
     thumb.style.background = categoryColor(rec.category, cats);
     if (rec.photoId) {
       const img = document.createElement('img');
-      img.src = photoSrc(rec.photoId, 200);
+      img.src = photoSrc(rec.photoId, 360);
       img.alt = '';
       img.loading = 'lazy';
       thumb.append(img);
+    } else {
+      thumb.textContent = rec.category;
     }
 
-    const body = document.createElement('div');
-    body.className = 'row-body';
-    const title = document.createElement('p');
-    title.className = 'row-title';
-    const cat = document.createElement('b');
-    cat.textContent = rec.category;
-    title.append(cat, document.createTextNode(` ${rec.keywords || ''}`));
-    const meta = document.createElement('p');
-    meta.className = 'row-meta';
-    meta.textContent = [hostOf(rec.link), shortDate(rec.createdAt)].filter(Boolean).join('・');
-    body.append(title, meta);
+    const keywords = document.createElement('p');
+    keywords.className = 'card-keywords';
+    keywords.textContent = rec.keywords || '';
 
-    li.append(thumb, body);
+    li.append(thumb, keywords);
     li.addEventListener('click', () => onOpen(rec));
     li.addEventListener('keydown', (e) => { if (e.key === 'Enter') onOpen(rec); });
     return li;

@@ -24,13 +24,20 @@ beforeEach(() => {
 });
 
 describe('搜尋畫面', () => {
-  test('給 3 筆資料畫出 3 列，每列有分類與關鍵字', async () => {
+  test('照片牆：每格是直式縮圖，下方是關鍵字', async () => {
     const screen = make({ list: async () => data });
     await screen.load();
+    expect(root.querySelector('#list-rows').classList.contains('wall')).toBe(true);
     expect(rows()).toHaveLength(3);
-    expect(rows()[0].textContent).toContain('烘焙');
-    expect(rows()[0].textContent).toContain('簡易泡芙，酥皮泡芙');
-    expect(rows()[0].querySelector('img').getAttribute('src')).toContain('f1');
+    const first = rows()[0];
+    expect(first.querySelector('.thumb img').getAttribute('src')).toContain('f1');
+    expect(first.querySelector('.card-keywords').textContent).toBe('簡易泡芙，酥皮泡芙');
+  });
+
+  test('沒有照片的格子在色塊上寫分類名稱', async () => {
+    const screen = make({ list: async () => data });
+    await screen.load();
+    expect(root.querySelector('[data-id="c"] .thumb').textContent).toBe('文句');
   });
 
   test('搜尋框的提示字是「找…」', () => {
